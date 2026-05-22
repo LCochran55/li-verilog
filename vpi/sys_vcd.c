@@ -38,7 +38,7 @@ static struct t_vpi_time zero_delay = { vpiSimTime, 0, 0, 0.0 };
 
 /*
  * The vcd_list is the list of all the objects that are tracked for
- * dumping. The vcd_checkpoint goes through the list to dump the current
+ * dumping. the vcd_checkpoint goes through the list to dump the current
  * values for everything. When the item has a value change, it is added to the
  * vcd_dmp_list for dumping in the current time step.
  *
@@ -403,11 +403,22 @@ static PLI_INT32 sys_dumpall_calltf(ICARUS_VPI_CONST PLI_BYTE8*name)
       return 0;
 }
 
+//DATA STREAMING STUFF:
+#include <glib.h>
+#include <librdkafka/rdkafka.h>
+
+static void kafka_send_data() {
+
+  
+}
+
 static void open_dumpfile(vpiHandle callh)
 {
+        
       char* use_dump_path = vcd_get_dump_path("vcd");
 
-      dump_file = fopen(use_dump_path, "w");
+      //dump_file = fopen(use_dump_path, "w");
+      dump_file = stdout; /*_path, "w"*/
 
       if (dump_file == 0) {
 	    vpi_printf("VCD Error: %s:%d: ", vpi_get_str(vpiFile, callh),
@@ -480,7 +491,7 @@ static PLI_INT32 sys_dumplimit_calltf(ICARUS_VPI_CONST PLI_BYTE8 *name)
       dump_limit = val.value.integer;
 
       vpi_free_object(argv);
-      return 0;
+
 }
 
 static void scan_item(unsigned depth, vpiHandle item, int skip)
@@ -963,4 +974,4 @@ void sys_vcd_register(void)
       tf_data.user_data = "$dumpvars";
       res = vpi_register_systf(&tf_data);
       vpip_make_systf_system_defined(res);
-}
+
