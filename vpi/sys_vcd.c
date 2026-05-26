@@ -20,6 +20,9 @@
 # include "sys_priv.h"
 # include "vcd_priv.h"
 
+#include <stream.h>
+
+
 /*
  * This file contains the implementations of the VCD related functions.
  */
@@ -435,8 +438,8 @@ static void open_dumpfile(vpiHandle callh)
         
       char* use_dump_path = vcd_get_dump_path("vcd");
 
-      //dump_file = fopen(use_dump_path, "w");
-      dump_file = stdout; /*_path, "w"*/
+      dump_file = fopen(use_dump_path, "w");
+      //dump_file = stdout; /*_path, "w"*/
 
       if (dump_file == 0) {
 	    vpi_printf("VCD Error: %s:%d: ", vpi_get_str(vpiFile, callh),
