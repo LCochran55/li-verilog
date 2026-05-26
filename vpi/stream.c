@@ -1,5 +1,5 @@
 //DATA STREAMING STUFF
-#include <glib.h>
+//#include <glib.h>
 #include <librdkafka/rdkafka.h>
 #include "stream.h"
 

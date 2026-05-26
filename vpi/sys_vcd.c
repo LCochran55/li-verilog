@@ -106,6 +106,23 @@ static char *truncate_bitvec(char *s)
       }
 }
 
+//DATA STREAMING
+//
+static void kprintf(const char *fmt, ...) {
+  //Replace fprintf(dumpfile, ...) 
+  // -> writes to the file and streams to kafka
+  //
+  char buf[512];
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+
+  fprintf(dump_file, "%s", buf);  
+  kafka_stream_data(buf, strlen(buf));
+
+}
+
 static void show_this_item(struct vcd_info*info)
 {
       s_vpi_value value;
@@ -114,22 +131,22 @@ static void show_this_item(struct vcd_info*info)
       if (type == vpiRealVar) {
 	    value.format = vpiRealVal;
 	    vpi_get_value(info->item, &value);
-	    fprintf(dump_file, "r%.16g %s\n", value.value.real, info->ident);
+	    kprintf("r%.16g %s\n", value.value.real, info->ident);
       } else if (type == vpiNamedEvent) {
-	    fprintf(dump_file, "1%s\n", info->ident);
+	    kprintf("1%s\n", info->ident);
       } else if (type == vpiParameter && vpi_get(vpiConstType, info->item) == vpiRealConst) {
 
 	    value.format = vpiRealVal;
 	    vpi_get_value(info->item, &value);
-	    fprintf(dump_file, "r%.16g %s\n", value.value.real, info->ident);
+	    kprintf("r%.16g %s\n", value.value.real, info->ident);
       } else if (vpi_get(vpiSize, info->item) == 1) {
 	    value.format = vpiBinStrVal;
 	    vpi_get_value(info->item, &value);
-	    fprintf(dump_file, "%s%s\n", value.value.str, info->ident);
+	    kprintf("%s%s\n", value.value.str, info->ident);
       } else {
 	    value.format = vpiBinStrVal;
 	    vpi_get_value(info->item, &value);
-	    fprintf(dump_file, "b%s %s\n", truncate_bitvec(value.value.str),
+	    kprintf("b%s %s\n", truncate_bitvec(value.value.str),
 		    info->ident);
       }
 }
@@ -173,7 +190,7 @@ static PLI_INT32 variable_cb_2(p_cb_data cause)
       PLI_UINT64 now = timerec_to_time64(cause->time);
 
       if (now != vcd_cur_time) {
-	    fprintf(dump_file, "#%" PLI_UINT64_FMT "\n", now);
+	    kprintf("#%" PLI_UINT64_FMT "\n", now);
 	    vcd_cur_time = now;
       }
 
@@ -235,19 +252,19 @@ static PLI_INT32 dumpvars_cb(p_cb_data cause)
       dumpvars_time = timerec_to_time64(cause->time);
       vcd_cur_time = dumpvars_time;
 
-      fprintf(dump_file, "$enddefinitions $end\n");
+      kprintf("$enddefinitions $end\n");
 
       if (!dump_is_off) {
-	    fprintf(dump_file, "$comment Show the parameter values. $end\n");
-	    fprintf(dump_file, "$dumpall\n");
+	    kprintf("$comment Show the parameter values. $end\n");
+	    kprintf("$dumpall\n");
 	    ITERATE_VCD_INFO(vcd_const_list, vcd_info, next, show_this_item);
-	    fprintf(dump_file, "$end\n");
+	    kprintf("$end\n");
 
-	    fprintf(dump_file, "#%" PLI_UINT64_FMT "\n", dumpvars_time);
+	    kprintf("#%" PLI_UINT64_FMT "\n", dumpvars_time);
 
-	    fprintf(dump_file, "$dumpvars\n");
+	    kprintf("$dumpvars\n");
 	    ITERATE_VCD_INFO(vcd_list, vcd_info, next, show_this_item);
-	    fprintf(dump_file, "$end\n");
+	    kprintf("$end\n");
       }
 
       return 0;
@@ -264,9 +281,10 @@ static PLI_INT32 finish_cb(p_cb_data cause)
       dumpvars_time = timerec_to_time64(cause->time);
 
       if (!dump_is_off && !dump_is_full && dumpvars_time != vcd_cur_time) {
-	    fprintf(dump_file, "#%" PLI_UINT64_FMT "\n", dumpvars_time);
+	    kprintf("#%" PLI_UINT64_FMT "\n", dumpvars_time);
       }
-
+      
+      flush_kafka(); //Flush kafka after finishing data dump
       fclose(dump_file);
 
       for (cur = vcd_list ;  cur ;  cur = next) {
@@ -338,13 +356,13 @@ static PLI_INT32 sys_dumpoff_calltf(ICARUS_VPI_CONST PLI_BYTE8*name)
       now64 = timerec_to_time64(&now);
 
       if (now64 > vcd_cur_time) {
-	    fprintf(dump_file, "#%" PLI_UINT64_FMT "\n", now64);
+	    kprintf("#%" PLI_UINT64_FMT "\n", now64);
 	    vcd_cur_time = now64;
       }
 
-      fprintf(dump_file, "$dumpoff\n");
+      kprintf("$dumpoff\n");
       ITERATE_VCD_INFO(vcd_list, vcd_info, next, show_this_item_x);
-      fprintf(dump_file, "$end\n");
+      kprintf("$end\n");
 
       return 0;
 }
@@ -368,13 +386,13 @@ static PLI_INT32 sys_dumpon_calltf(ICARUS_VPI_CONST PLI_BYTE8*name)
       now64 = timerec_to_time64(&now);
 
       if (now64 > vcd_cur_time) {
-	    fprintf(dump_file, "#%" PLI_UINT64_FMT "\n", now64);
+	    kprintf("#%" PLI_UINT64_FMT "\n", now64);
 	    vcd_cur_time = now64;
       }
 
-      fprintf(dump_file, "$dumpon\n");
+      kprintf("$dumpon\n");
       ITERATE_VCD_INFO(vcd_list, vcd_info, next, show_this_item);
-      fprintf(dump_file, "$end\n");
+      kprintf("$end\n");
 
       return 0;
 }
@@ -395,51 +413,26 @@ static PLI_INT32 sys_dumpall_calltf(ICARUS_VPI_CONST PLI_BYTE8*name)
       now64 = timerec_to_time64(&now);
 
       if (now64 > vcd_cur_time) {
-	    fprintf(dump_file, "#%" PLI_UINT64_FMT "\n", now64);
+	    kprintf("#%" PLI_UINT64_FMT "\n", now64);
 	    vcd_cur_time = now64;
       }
 
-      fprintf(dump_file, "$dumpall\n");
+      kprintf("$dumpall\n");
       ITERATE_VCD_INFO(vcd_list, vcd_info, next, show_this_item);
-      fprintf(dump_file, "$end\n");
+      kprintf("$end\n");
 
       return 0;
 }
 
-//DATA STREAMING STUFF
-#include <glib.h>
-#include <librdkafka/rdkafka.h>
 
-static void kafka_send_data(vcd data here or something) {
-  /*
-  //Replace fprintf(dumpfile, ...) -> Sends same bytes to kafka_send_data
-  //Uses kafka_stream_data (from stream.c) to send whatever is in dump_file to kafka
-  //temp = format_buffer, format to string
-  //rd_kafka_produce(rkt, partition, msgflags, payload, size,
-                                     key, key_size, NULL);
-  rd_kafka_produce() -> err = rd_kafka_producev(rk (producer), RD_KAFKA_V_RKT(rkt (topic)), 
-                                                RD_KAFKA_V_PARTITION(partition),
-                                                RD_KAFKA_V_MSGFLAGS(msgflags),
-                                                RD_KAFKA_V_VALUE(payload, size),
-                                                RD_KAFKA_V_KEY(key, key_size),
-                                                RD_KAFKA_V_HEADERS(hdrs_copy), RD_KAFKA_V_END);
-  */
-  rd_kafka_producev(
-            producer,
-            RD_KAFKA_V_TOPIC(kafka_topic),
-            RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_COPY),
-            RD_KAFKA_V_VALUE((void *)payload, len),
-            RD_KAFKA_V_END
-        );
-}
 
-static void open_dumpfile(vpiHandle callh)
-{
-        
+static void open_dumpfile(vpiHandle callh) {
+
+      init_kafka(); //Initializes kafka before dumping file contents
+
       char* use_dump_path = vcd_get_dump_path("vcd");
-
-      dump_file = fopen(use_dump_path, "w");
-      //dump_file = stdout; /*_path, "w"*/
+      //dump_file = fopen(use_dump_path, "w");
+      dump_file = stdout; /*_path, "w"*/
 
       if (dump_file == 0) {
 	    vpi_printf("VCD Error: %s:%d: ", vpi_get_str(vpiFile, callh),
@@ -471,17 +464,17 @@ static void open_dumpfile(vpiHandle callh)
 	    }
 
 		if (!dump_no_date) {
-			fprintf(dump_file, "$date\n");
-			fprintf(dump_file, "\t%s",asctime(localtime(&walltime)));
-			fprintf(dump_file, "$end\n");
+			kprintf("$date\n");
+			kprintf("\t%s",asctime(localtime(&walltime)));
+			kprintf("$end\n");
 		}
-	    fprintf(dump_file, "$version\n");
-	    fprintf(dump_file, "\tIcarus Verilog\n");
-	    fprintf(dump_file, "$end\n");
-	    fprintf(dump_file, "$timescale\n");
-	    fprintf(dump_file, "\t%u%s\n", scale, units_names[udx]);
-	    fprintf(dump_file, "$end\n");
-      }
+	    kprintf("$version\n");
+	    kprintf("\tIcarus Verilog\n");
+	    kprintf("$end\n");
+	    kprintf("$timescale\n");
+	    kprintf("\t%u%s\n", scale, units_names[udx]);
+	    kprintf("$end\n");
+    }
 }
 
 static PLI_INT32 sys_dumpfile_calltf(ICARUS_VPI_CONST PLI_BYTE8*name)
@@ -512,7 +505,7 @@ static PLI_INT32 sys_dumplimit_calltf(ICARUS_VPI_CONST PLI_BYTE8 *name)
       dump_limit = val.value.integer;
 
       vpi_free_object(argv);
-
+      return 0;
 }
 
 static void scan_item(unsigned depth, vpiHandle item, int skip)
@@ -693,17 +686,17 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
 	    if (item_type == vpiNamedEvent) size = 1;
 	    else size = vpi_get(vpiSize, item);
 
-	    fprintf(dump_file, "$var %s %u %s %s%s",
+	    	kprintf( "$var %s %u %s %s%s",
 		    type, size, ident, prefix, name);
 
 	      /* Add a range for vectored values. */
 	    if (size > 1 || vpi_get(vpiLeftRange, item) != 0) {
-		  fprintf(dump_file, " [%i:%i]",
+		  	kprintf(" [%i:%i]",
 			  (int)vpi_get(vpiLeftRange, item),
 			  (int)vpi_get(vpiRightRange, item));
 	    }
 
-	    fprintf(dump_file, " $end\n");
+	    kprintf(" $end\n");
 	    break;
 
 	  case vpiParameter:
@@ -731,7 +724,7 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
 	    info->cb = NULL;
 
 	    /* Generate the $var record. Now the parameter is declared. */
-	    fprintf(dump_file, "$var %s %u %s %s%s $end\n",
+	    	kprintf( "$var %s %u %s %s%s $end\n",
 		    type, size, ident, prefix, name);
 	    break;
 
@@ -756,7 +749,7 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
 		  }
 
 		  name = vpi_get_str(vpiName, item);
-		  fprintf(dump_file, "$scope %s %s $end\n", type, name);
+		  	kprintf("$scope %s %s $end\n", type, name);
 
 		  for (i=0; dumpable_types[i]>0; i++) {
 			vpiHandle hand;
@@ -767,7 +760,7 @@ static void scan_item(unsigned depth, vpiHandle item, int skip)
 		  }
 
 		    /* Sort any signals that we added above. */
-		  fprintf(dump_file, "$upscope $end\n");
+		  	kprintf("$upscope $end\n");
 	    }
 	    break;
 
@@ -808,7 +801,7 @@ static int draw_scope(vpiHandle item, vpiHandle callh)
             assert(0);
       }
 
-      fprintf(dump_file, "$scope %s %s $end\n", type, name);
+      	kprintf("$scope %s %s $end\n", type, name);
 
       return depth;
 }
@@ -901,7 +894,7 @@ static PLI_INT32 sys_dumpvars_calltf(ICARUS_VPI_CONST PLI_BYTE8*name)
 	      /* The scope list must be sorted after we scan an item.  */
 	    vcd_names_sort(&vcd_tab);
 
-	    while (dep--) fprintf(dump_file, "$upscope $end\n");
+	    while (dep--) 	kprintf("$upscope $end\n");
 
 	      /* Add this signal to the variable list so we can verify it
 	       * is not included twice. This must be done after it has
@@ -995,4 +988,5 @@ void sys_vcd_register(void)
       tf_data.user_data = "$dumpvars";
       res = vpi_register_systf(&tf_data);
       vpip_make_systf_system_defined(res);
+}
 
