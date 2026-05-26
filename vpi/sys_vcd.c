@@ -403,13 +403,31 @@ static PLI_INT32 sys_dumpall_calltf(ICARUS_VPI_CONST PLI_BYTE8*name)
       return 0;
 }
 
-//DATA STREAMING STUFF:
+//DATA STREAMING STUFF
 #include <glib.h>
 #include <librdkafka/rdkafka.h>
 
-static void kafka_send_data() {
-
-  
+static void kafka_send_data(vcd data here or something) {
+  /*
+  //Replace fprintf(dumpfile, ...) -> Sends same bytes to kafka_send_data
+  //Uses kafka_stream_data (from stream.c) to send whatever is in dump_file to kafka
+  //temp = format_buffer, format to string
+  //rd_kafka_produce(rkt, partition, msgflags, payload, size,
+                                     key, key_size, NULL);
+  rd_kafka_produce() -> err = rd_kafka_producev(rk (producer), RD_KAFKA_V_RKT(rkt (topic)), 
+                                                RD_KAFKA_V_PARTITION(partition),
+                                                RD_KAFKA_V_MSGFLAGS(msgflags),
+                                                RD_KAFKA_V_VALUE(payload, size),
+                                                RD_KAFKA_V_KEY(key, key_size),
+                                                RD_KAFKA_V_HEADERS(hdrs_copy), RD_KAFKA_V_END);
+  */
+  rd_kafka_producev(
+            producer,
+            RD_KAFKA_V_TOPIC(kafka_topic),
+            RD_KAFKA_V_MSGFLAGS(RD_KAFKA_MSG_F_COPY),
+            RD_KAFKA_V_VALUE((void *)payload, len),
+            RD_KAFKA_V_END
+        );
 }
 
 static void open_dumpfile(vpiHandle callh)
