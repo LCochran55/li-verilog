@@ -3,11 +3,14 @@
 #include <librdkafka/rdkafka.h>
 #include "stream.h"
 
-static rd_kafka_t *producer = NULL;
+static rd_kafka_t *producer = NULL; 
 static rd_kafka_topic_t *rk_topic = NULL;
-static const char *kafka_brokers = "localhost:9092";
-static const char *kafka_topic_str = "vcd-topic";
+static const char *kafka_brokers = "localhost:9092"; //Local for now? Forever? :-P
+static const char *kafka_topic_str = "vcd-topic"; // Assuming the topic will stay the same for the broker idk kafka lol
+                                                  // Just make the topic this when initlizing the broker
 
+// delivery report callback
+// triggered when a message had successfully delivered or if delivery had failed
 static void dr_msg_cb (rd_kafka_t *kafka_handle,
                        const rd_kafka_message_t *rkmessage,
                        void *opaque) {
@@ -17,17 +20,16 @@ static void dr_msg_cb (rd_kafka_t *kafka_handle,
 }
 
 void init_kafka(void) {
-  //To be init at startup, before open_dump_file called
-  //Create conf, set the bootstrap server, create producer, create topic; called after dump_file
+  //To be init at startup; create conf, set the bootstrap server, create producer, create topic
+  char errstr[512]; //used to store error messages -> librdkafka API error reporting buffer
 
-  char errstr[512];
-
-  rd_kafka_conf_t *rk_conf = rd_kafka_conf_new();
+  rd_kafka_conf_t *rk_conf = rd_kafka_conf_new(); //creates a new configuration object for Kafka client
   if (!rk_conf) {
         g_error("Failed to create kafka conf");
         return;
   }
 
+  //Set bootstrap broker(s) as a comma-separated list of host:port (port 9092).
   if (rd_kafka_conf_set(rk_conf, "bootstrap.servers", kafka_brokers,
                       errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
     rd_kafka_conf_destroy(rk_conf);
@@ -35,6 +37,11 @@ void init_kafka(void) {
     return;
   }
 
+  /*Set the consumer group id.
+         * All consumers sharing the same group id (acks) will join the same
+         * group, and the subscribed topic' partitions will be assigned
+         * according to the partition.assignment.strategy
+         * (consumer config property) to the consumers in the group. */
   if (rd_kafka_conf_set(rk_conf, "acks", "all",
                           errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
         rd_kafka_conf_destroy(rk_conf);
@@ -42,7 +49,12 @@ void init_kafka(void) {
         return;
   }
 
-
+   /* Set the delivery report callback.
+         * This callback will be called once per message to inform
+         * the application if delivery succeeded or failed.
+         * See dr_msg_cb() above.
+         * The callback is only triggered from rd_kafka_poll() and
+         * rd_kafka_flush(). */
   rd_kafka_conf_set_dr_msg_cb(rk_conf, dr_msg_cb);
 
   // Create the Producer instance.
@@ -79,9 +91,6 @@ void flush_kafka(void) {
   rd_kafka_destroy(producer);
   producer = NULL;
 } 
-
-// Consumer termination:
-// rd_kafka_consumer_close() and rd_kafka_destroy():
 
 
 // Producer termination squence:
