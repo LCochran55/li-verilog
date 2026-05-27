@@ -107,7 +107,10 @@ static char *truncate_bitvec(char *s)
 }
 
 //DATA STREAMING
-//
+
+/*
+ * Prints to VCD file while also streaming to apache Kafka
+*/
 static void kprintf(const char *fmt, ...) {
   //Replace fprintf(dumpfile, ...) 
   // -> writes to the file and streams to kafka
@@ -122,6 +125,13 @@ static void kprintf(const char *fmt, ...) {
   kafka_stream_data(buf, strlen(buf));
 
 }
+
+/*
+static void print_to_terminal() {
+
+
+}
+*/
 
 static void show_this_item(struct vcd_info*info)
 {

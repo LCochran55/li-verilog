@@ -3,6 +3,20 @@
 #include <librdkafka/rdkafka.h>
 #include "stream.h"
 
+
+
+/*
+CURRENTLY TO START THE STREAM:
+# In 1st terminal start consumer:
+sudo docker exec kafka kafka-console-consumer \
+    --topic vcd-topic \
+    --bootstrap-server localhost:9092 \
+    --from-beginning
+
+# In 2nd terminal start simulation:
+vvp simulation
+*/
+
 static rd_kafka_t *producer = NULL; 
 static rd_kafka_topic_t *rk_topic = NULL;
 static const char *kafka_brokers = "localhost:9092"; //Local for now? Forever? :-P
