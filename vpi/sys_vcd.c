@@ -110,22 +110,47 @@ static char *truncate_bitvec(char *s)
 
 /*
  * Prints to VCD file while also streaming to apache Kafka
-*/
-static void kprintf(const char *fmt, ...) {
-  //Replace fprintf(dumpfile, ...) 
-  // -> writes to the file and streams to kafka
-  //
-  char buf[512];
-  va_list args;
-  va_start(args, fmt);
-  vsnprintf(buf, sizeof(buf), fmt, args);
-  va_end(args);
+ int safe_format(char *buf, size_t size, const char *fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    int result = vsnprintf(buf, size, fmt, args);
+    va_end(args);
 
-  fprintf(dump_file, "%s", buf);  
-  kafka_stream_data(buf, strlen(buf));
-
+    printf("%d", result);
+    
+    if (result >= size) {
+        // Buffer was too small, truncation occurred
+        buf[size - 1] = '\0';
+        return -1;
+    }
+    return result;
 }
 
+*/
+
+
+static void kprintf(const char *fmt, ...) {
+  char buf[0];
+  va_list args, args_copy;
+  va_start(args, fmt);
+  va_copy(args_copy, args);
+  int result = vsnprintf(buf, sizeof(buf), fmt, args);
+  va_end(args);
+
+  
+  char *buffer = (char *)malloc(result+1);
+  if (buffer == NULL){
+    fprintf(stderr, "Memory allocation failed");
+    return;
+  }
+  vsnprintf(buffer, result+1, fmt, args_copy);
+  va_end(args_copy);
+  
+  fprintf(dump_file, "%s", buffer);  
+  kafka_stream_data(buffer, strlen(buffer));
+  
+  free(buffer);
+}
 /*
 static void print_to_terminal() {
 
@@ -168,13 +193,13 @@ static void show_this_item_x(struct vcd_info*info)
 
       if (type == vpiRealVar) {
 	      /* Some tools dump nothing here...? */
-	    fprintf(dump_file, "rNaN %s\n", info->ident);
+	    kprintf("rNaN %s\n", info->ident);
       } else if (type == vpiNamedEvent) {
 	    /* Do nothing for named events. */
       } else if (vpi_get(vpiSize, info->item) == 1) {
-	    fprintf(dump_file, "x%s\n", info->ident);
+	    kprintf("x%s\n", info->ident);
       } else {
-	    fprintf(dump_file, "bx %s\n", info->ident);
+	    kprintf("bx %s\n", info->ident);
       }
 }
 
@@ -441,8 +466,8 @@ static void open_dumpfile(vpiHandle callh) {
       init_kafka(); //Initializes kafka before dumping file contents
 
       char* use_dump_path = vcd_get_dump_path("vcd");
-      //dump_file = fopen(use_dump_path, "w");
-      dump_file = stdout; /*_path, "w"*/
+      dump_file = fopen(use_dump_path, "w");
+      //dump_file = stdout; /*_path, "w"*/
 
       if (dump_file == 0) {
 	    vpi_printf("VCD Error: %s:%d: ", vpi_get_str(vpiFile, callh),

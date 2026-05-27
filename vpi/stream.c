@@ -1,5 +1,4 @@
 //DATA STREAMING STUFF
-//#include <glib.h>
 #include <librdkafka/rdkafka.h>
 #include "stream.h"
 
@@ -29,7 +28,8 @@ static void dr_msg_cb (rd_kafka_t *kafka_handle,
                        const rd_kafka_message_t *rkmessage,
                        void *opaque) {
     if (rkmessage->err) {
-        g_error("Message delivery failed: %s", rd_kafka_err2str(rkmessage->err));
+        fprintf(stderr, "Message delivery failed: %s", rd_kafka_err2str(rkmessage->err));
+        return;
     }
 }
 
@@ -39,15 +39,15 @@ void init_kafka(void) {
 
   rd_kafka_conf_t *rk_conf = rd_kafka_conf_new(); //creates a new configuration object for Kafka client
   if (!rk_conf) {
-        g_error("Failed to create kafka conf");
-        return;
+        fprintf(stderr, "Failed to create kafka conf\n");
+        return;  
   }
 
   //Set bootstrap broker(s) as a comma-separated list of host:port (port 9092).
   if (rd_kafka_conf_set(rk_conf, "bootstrap.servers", kafka_brokers,
                       errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
     rd_kafka_conf_destroy(rk_conf);
-    g_error("Failed to set config: %s", errstr);
+    fprintf(stderr, "Failed to set config: %s", errstr);
     return;
   }
 
@@ -59,7 +59,7 @@ void init_kafka(void) {
   if (rd_kafka_conf_set(rk_conf, "acks", "all",
                           errstr, sizeof(errstr)) != RD_KAFKA_CONF_OK) {
         rd_kafka_conf_destroy(rk_conf);
-        g_error("Failed to set acks: %s", errstr);
+        fprintf(stderr, "Failed to set acks: %s", errstr);
         return;
   }
 
@@ -75,14 +75,14 @@ void init_kafka(void) {
   producer = rd_kafka_new(RD_KAFKA_PRODUCER, rk_conf, errstr, sizeof(errstr));
     if (!producer) {
         rd_kafka_conf_destroy(rk_conf);
-        g_error("Failed to create new producer: %s", errstr);
+        fprintf(stderr, "Failed to create new producer: %s", errstr);
         return;
     }
     
 
   rk_topic = rd_kafka_topic_new(producer, kafka_topic_str, NULL);
   if (!rk_topic) {
-        g_error("Failed to create topic handle: %s",
+        fprintf(stderr, "Failed to create topic handle: %s",
                 rd_kafka_err2str(rd_kafka_last_error()));
         rd_kafka_destroy(producer);
         producer = NULL;
@@ -118,6 +118,8 @@ void flush_kafka(void) {
 */
 
 void kafka_stream_data(const char *vcd_text, size_t vcd_text_len) {
+  if (!producer) return;
+
    int err = rd_kafka_produce(
         rk_topic,              
         RD_KAFKA_PARTITION_UA, 
@@ -128,7 +130,7 @@ void kafka_stream_data(const char *vcd_text, size_t vcd_text_len) {
     );
 
   if (err == -1) {
-       g_warning("Failed to produce to topic %s: %s", kafka_topic_str, rd_kafka_err2str(rd_kafka_last_error()));
+       fprintf(stderr, "Failed to produce to topic %s: %s", kafka_topic_str, rd_kafka_err2str(rd_kafka_last_error()));
   }
 
   rd_kafka_poll(producer, 0);
