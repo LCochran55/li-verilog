@@ -110,24 +110,8 @@ static char *truncate_bitvec(char *s)
 
 /*
  * Prints to VCD file while also streaming to apache Kafka
- int safe_format(char *buf, size_t size, const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    int result = vsnprintf(buf, size, fmt, args);
-    va_end(args);
-
-    printf("%d", result);
-    
-    if (result >= size) {
-        // Buffer was too small, truncation occurred
-        buf[size - 1] = '\0';
-        return -1;
-    }
-    return result;
-}
 
 */
-
 
 static void kprintf(const char *fmt, ...) {
   char buf[0];
@@ -145,18 +129,15 @@ static void kprintf(const char *fmt, ...) {
   }
   vsnprintf(buffer, result+1, fmt, args_copy);
   va_end(args_copy);
-  
-  fprintf(dump_file, "%s", buffer);  
+
+  if (dump_file != NULL) {
+    fprintf(dump_file, "%s", buffer);  
+  }
+
   kafka_stream_data(buffer, strlen(buffer));
-  
   free(buffer);
 }
-/*
-static void print_to_terminal() {
 
-
-}
-*/
 
 static void show_this_item(struct vcd_info*info)
 {
@@ -467,7 +448,6 @@ static void open_dumpfile(vpiHandle callh) {
 
       char* use_dump_path = vcd_get_dump_path("vcd");
       dump_file = fopen(use_dump_path, "w");
-      //dump_file = stdout; /*_path, "w"*/
 
       if (dump_file == 0) {
 	    vpi_printf("VCD Error: %s:%d: ", vpi_get_str(vpiFile, callh),
