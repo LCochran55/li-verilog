@@ -124,7 +124,7 @@ static void kprintf(const char *fmt, ...) {
   
   char *buffer = (char *)malloc(result+1);
   if (buffer == NULL){
-    fprintf(stderr, "Memory allocation failed");
+    //fprintf(stderr, "Memory allocation failed");
     return;
   }
   vsnprintf(buffer, result+1, fmt, args_copy);
@@ -234,7 +234,7 @@ static PLI_INT32 variable_cb_1(p_cb_data cause)
             dump_is_full = 1;
             vpi_printf("WARNING: Dump file limit (%ld bytes) "
                                "exceeded.\n", dump_limit);
-            fprintf(dump_file, "$comment Dump file limit (%ld bytes) "
+            kprintf("$comment Dump file limit (%ld bytes) "
                                "exceeded. $end\n", dump_limit);
             return 0;
       }
