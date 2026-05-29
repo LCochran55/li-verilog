@@ -27,7 +27,8 @@ jobs:
       run: |
         brew install bison
         brew install librdkafka
-
+        brew install openjdk@17
+        brew install wget
 
     - name: Build, check and install
       run: |
@@ -44,10 +45,25 @@ jobs:
         make -j$(nproc) check
         sudo make install
 
+    - name: Build Kafka
+      run: | 
+        wget -q https://downloads.apache.org/kafka/4.3.0/kafka_2.13-4.3.0.tgz
+        tar -xzf kafka_2.13-4.3.0.tgz
+        cd kafka_2.13-4.3.0
+        KAFKA_CLUSTER_ID=$(bin/kafka-storage.sh random-uuid)
+        bin/kafka-storage.sh format --standalone -t $KAFKA_CLUSTER_ID -c config/server.properties
+        bin/kafka-server-start.sh -daemon config/server.properties
+        for i in {1..30}; do
+          bin/kafka-topics.sh --list --bootstrap-server localhost:9092 &>/dev/null && break
+          sleep 2
+        done
+        bin/kafka-topics.sh --create --topic vcd-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 
+
     - name: Test
       run: |
         make check-installed
-      
+      env:
+          KAFKA_BROKER: "localhost:9092"
 
 
   lin:
