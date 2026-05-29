@@ -89,6 +89,13 @@ jobs:
         pip install --upgrade pip
         pip install -r Documentation/requirements.txt
 
+    - name: Build Java 
+      steps:
+      - uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+        
+
     - name: Build Kafka
       run: | 
         wget -q https://downloads.apache.org/kafka/4.3.0/kafka_2.13-4.3.0.tgz
