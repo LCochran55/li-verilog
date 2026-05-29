@@ -104,7 +104,7 @@ jobs:
       run:
         make check-installed
       env:
-          KAFKA_BROKER:localhost:9092
+          KAFKA_BROKER: "localhost:9092"
 
     - name: Documentation
       run: |
