@@ -66,7 +66,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update -qq
-        sudo apt install -y make g++ git bison flex gperf libreadline-dev libbz2-dev autoconf python3-venv librdkafka-dev
+        sudo apt install -y make g++ git bison flex gperf libreadline-dev libbz2-dev autoconf python3-venv librdkafka-dev openjdk-21-jdk-headless wget
         python3 -m venv .venv
         . .venv/bin/activate
         pip install --upgrade pip
