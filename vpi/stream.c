@@ -18,7 +18,7 @@ vvp simulation
 
 static rd_kafka_t *producer = NULL; 
 static rd_kafka_topic_t *rk_topic = NULL;
-static const char *kafka_brokers = "localhost:9092"; //Local for now? Forever? :-P
+static const char *kafka_brokers = NULL;
 static const char *kafka_topic_str = "vcd-topic"; // Assuming the topic will stay the same for the broker idk kafka lol
                                                   // Just make the topic this when initlizing the broker
 
@@ -35,6 +35,9 @@ static void dr_msg_cb (rd_kafka_t *kafka_handle,
 
 void init_kafka(void) {
   //To be init at startup; create conf, set the bootstrap server, create producer, create topic
+  kafka_brokers = getenv("KAFKA_BROKER");
+  if (!kafka_brokers) kafka_brokers = "localhost:9092";
+
   char errstr[512]; //used to store error messages -> librdkafka API error reporting buffer
 
   rd_kafka_conf_t *rk_conf = rd_kafka_conf_new(); //creates a new configuration object for Kafka client
