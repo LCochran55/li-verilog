@@ -1,0 +1,5 @@
+{
+  "type"   : "normal",
+  "source" : "test_stream.v",
+  "gold"   : "test_stream"
+}
