@@ -125,8 +125,6 @@ jobs:
 
     - name: Build docker images
       run: docker compose -f .github/workflows/docker-compose.yml build
-    - name: Setup database
-      run: docker compose -f .github/workflows/docker-compose.yml run setup
     - name: Run Docker Compose
       run: docker compose -f .github/workflows/docker-compose.yml up -d
 
