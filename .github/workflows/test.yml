@@ -124,11 +124,11 @@ jobs:
         sudo make install
 
     - name: Build docker images
-      run: docker compose build
+      run: docker compose -f .github/workflows/docker-compose.yml build
     - name: Setup database
       run: docker compose run setup
-    - name: Run tests
-      run: docker compose run test
+    - name: Run Docker Compose
+      run: docker compose up -d
 
     - name: Test
       run:
