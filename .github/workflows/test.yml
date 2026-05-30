@@ -169,7 +169,7 @@ jobs:
           base-devel
           python-pip 
           wget
-          mingw-w64--${{ matrix.env }}-x86_64-librdkafka
+          mingw-w64-${{ matrix.env }}-x86_64-librdkafka
           openjdk
           mingw-w64-${{ matrix.env }}-perl
 
