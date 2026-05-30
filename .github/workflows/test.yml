@@ -123,6 +123,17 @@ jobs:
         make -j$(nproc) check
         sudo make install
 
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+    - name: Build docker images
+      run: docker compose build
+    - name: Setup database
+      run: docker compose run setup
+    - name: Run tests
+      run: docker compose run test
+
     - name: Test
       run:
         make check-installed
