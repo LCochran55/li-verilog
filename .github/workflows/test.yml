@@ -168,6 +168,9 @@ jobs:
           git
           base-devel
           python-pip
+          librdkafka
+          openjdk-21-jdk-headless 
+          wget
           mingw-w64-${{ matrix.env }}-perl
 
     - uses: actions/setup-python@v6
