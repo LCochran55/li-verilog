@@ -167,10 +167,10 @@ jobs:
         install: >
           git
           base-devel
-          python-pip
-          librdkafka
-          openjdk-21-jdk-headless 
+          python-pip 
           wget
+          mingw-w64--${{ matrix.env }}-x86_64-librdkafka
+          openjdk
           mingw-w64-${{ matrix.env }}-perl
 
     - uses: actions/setup-python@v6
