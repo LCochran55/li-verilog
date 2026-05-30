@@ -170,7 +170,7 @@ jobs:
           python-pip 
           wget
           mingw-w64-${{ matrix.env }}-librdkafka
-          openjdk
+          mingw-w64-${{ matrix.env }}-openjdk
           mingw-w64-${{ matrix.env }}-perl
 
     - uses: actions/setup-python@v6
@@ -181,7 +181,7 @@ jobs:
       uses: actions/setup-java@v5
       with:
         java-version: '21'
-        distribution: 'temurin' 
+        distribution: 'temurin'
 
     - name: Build Kafka
       run: | 
