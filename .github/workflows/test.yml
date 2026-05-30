@@ -160,7 +160,7 @@ jobs:
 
     - uses: actions/checkout@v6
 
-    - name: Build Java 21 and JDK 
+    - name: Build Java 21 
       uses: actions/setup-java@v5
       with:
         java-version: '21'
@@ -175,7 +175,6 @@ jobs:
           base-devel
           python-pip 
           mingw-w64-${{ matrix.env }}-librdkafka
-          mingw-w64-${{ matrix.env }}-openjdk
           mingw-w64-${{ matrix.env }}-perl
 
     - uses: actions/setup-python@v6
