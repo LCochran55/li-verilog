@@ -124,7 +124,7 @@ jobs:
         sudo make install
 
     - name: Build docker images
-      run: docker compose -f .github/workflows/docker-compose.yml build
+      run: docker compose -f docker-compose.yml build
     - name: Setup database
       run: docker compose run setup
     - name: Run Docker Compose
