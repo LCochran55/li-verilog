@@ -170,7 +170,7 @@ jobs:
           python-pip 
           wget
           mingw-w64-${{ matrix.env }}-librdkafka
-          ${{ matrix.env }}-openjdk
+          mingw-w64-${{ matrix.env }}-openjdk-21-jdk-headless
           mingw-w64-${{ matrix.env }}-perl
 
     - uses: actions/setup-python@v6
