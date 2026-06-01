@@ -9,7 +9,6 @@ module counter(out, clk, rst);
 endmodule
 
 
-
 module test;
   reg        rst = 0;
   reg        clk = 0;

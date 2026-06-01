@@ -1,0 +1,4 @@
+# Test list files are a list of test names and the json that
+# describes the test.
+
+test_kafka_stream			kafka_tests/test_kafka_stream.json
