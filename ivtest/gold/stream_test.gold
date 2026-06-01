@@ -1,20 +1,59 @@
-At time                    0, value = xx (x)
-At time                   17, value = 00 (0)
-At time                   35, value = 01 (1)
-At time                   45, value = 02 (2)
-At time                   55, value = 03 (3)
-At time                   57, value = 00 (0)
-At time                   75, value = 01 (1)
-At time                   85, value = 02 (2)
-At time                   95, value = 03 (3)
-At time                  105, value = 04 (4)
-At time                  115, value = 05 (5)
-At time                  125, value = 06 (6)
-At time                  135, value = 07 (7)
-At time                  145, value = 08 (8)
-At time                  155, value = 09 (9)
-At time                  165, value = 0a (10)
-counter_tb.v:10: $stop called at 168 (1s)
-** VVP Stop(0) **
-** Flushing output streams.
-** Current simulation time is 168 ticks.
+$date
+	Mon Jun  1 09:41:22 2026
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module test $end
+$var wire 4 ! val [3:0] $end
+$var reg 1 " clk $end
+$var reg 1 # rst $end
+$scope module c1 $end
+$var wire 1 " clk $end
+$var wire 1 # rst $end
+$var reg 4 $ out [3:0] $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+bx $
+0#
+0"
+bx !
+$end
+#1
+b0 !
+b0 $
+1"
+#2
+0"
+#3
+1"
+#4
+0"
+#5
+b1 !
+b1 $
+1"
+1#
+#6
+0"
+#7
+b10 !
+b10 $
+1"
+#8
+0"
+#9
+b11 !
+b11 $
+1"
+#10
+0"
