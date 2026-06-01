@@ -339,3 +339,18 @@ def run_EF(options: dict, cfg: dict) -> list:
 def run_TE(options: dict, cfg: dict) -> list:
     '''Run a translation fail test'''
     return do_run_normal(options, cfg, False, True)
+
+def run_kafka(options: dict, cfg: dict) -> list:
+    it_key = options['key']
+    build_runtime(it_key)
+
+
+
+    # 1. Check Kafka is reachable
+    # 2. Set up consumer and subscribe
+    # 3. Compile with iverilog (reuse assemble_iverilog_cmd + run_cmd)
+    # 4. Run vvp (reuse assemble_vvp_cmd + run_cmd)
+    # 5. Poll and collect messages
+    # 6. Compare against gold
+    # 7. Return pass/fail
+

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 '''
-Usage:
+usage:
     kafka_reg
     kafka_reg <list-paths>...
 
 <list-paths> is a list of files in the current working directory that
-            each contain a list of tests. By convention, the file has the
-            suffix ".list". The files will be processed in order, so tests
-            can be overridden if listed twice. If no files are given, a
+            each contain a list of tests. by convention, the file has the
+            suffix ".list". the files will be processed in order, so tests
+            can be overridden if listed twice. if no files are given, a
             default list is used.
 '''
 
@@ -17,14 +17,15 @@ import json
 import argparse
 import test_lists
 import run_ivl
+import run_kafka
 
 
 import confluent_kafka
 
 
-class InvalidTestType(Exception):
+class invalidtesttype(Exception):
     '''Exception to raise when the test type is not supported.'''
-    def __init__(self, test, ttype, msg='Invalid test type!'):
+    def __init__(self, test, ttype, msg='invalid test type!'):
         self.test = test
         self.ttype = ttype
         self.msg = msg
@@ -32,11 +33,11 @@ class InvalidTestType(Exception):
 
     def __str__(self):
         # pylint: disable-next=consider-using-f-string
-        return "Given test type '{ttype}' for test {test}".format(ttype=self.ttype,test=self.test)
+        return "given test type '{ttype}' for test {test}".format(ttype=self.ttype,test=self.test)
 
-class InvalidJSON(Exception):
-    '''Exception to raise if the JSON is not parsed properly.'''
-    def __init__(self, test, path, msg='Invalid JSON file!'):
+class invalidjson(Exception):
+    '''Exception to raise if the json is not parsed properly.'''
+    def __init__(self, test, path, msg='invalid json file!'):
         self.test = test
         self.path = path
         self.msg = msg
@@ -44,7 +45,7 @@ class InvalidJSON(Exception):
 
     def __str__(self):
         # pylint: disable-next=consider-using-f-string
-        res = "Unable to parse JSON file '{path}' for test {test}:".format(path=self.path,
+        res = "unable to parse json file '{path}' for test {test}:".format(path=self.path,
                                                                            test=self.test)
         # pylint: disable-next=consider-using-f-string
         res += "\n    {msg}".format(msg=self.msg)
@@ -52,7 +53,7 @@ class InvalidJSON(Exception):
 
 
 def process_overrides(group: str, it_dict: dict, it_opts: dict):
-    '''Override the gold file, type or arguments if needed.'''
+    '''override the gold file, type or arguments if needed.'''
     if group in it_dict:
         overrides = ['gold', 'type']
         for override in overrides:
@@ -66,7 +67,7 @@ def process_overrides(group: str, it_dict: dict, it_opts: dict):
 
 
 def force_gen(it_opts: dict):
-    '''Remove the current generation and force it to the latest.'''
+    '''remove the current generation and force it to the latest.'''
     generations = ['-g2023', '-g2017', '-g2012', '-g2009', '-g2005-sv',
                    '-g2005', '-g2001-noconfig', '-g2001', '-g1995',
                    '-g2', '-g1']
@@ -82,21 +83,21 @@ def force_gen(it_opts: dict):
 
 
 def process_test(item: list, cfg: list) -> str:
-    '''Process a single test
+    '''process a single test
 
-    This takes in the list of tokens from the tests list file, and converts
+    this takes in the list of tokens from the tests list file, and converts
     them (interprets them) to a collection of values.'''
 
-    # This is the name of the test, and the name of the main sorce file
+    # this is the name of the test, and the name of the main sorce file
     it_key = item[0]
     test_path = item[1]
     with open(test_path, 'rt', encoding='ascii') as fd:
         try:
             it_dict = json.load(fd)
-        except json.decoder.JSONDecodeError as exception:
-            raise InvalidJSON(it_key, test_path, exception) from exception
+        except json.decoder.jsondecodeerror as Exception:
+            raise invalidjson(it_key, test_path, Exception) from Exception
 
-    # Wrap all of this into an options dictionary for ease of handling.
+    # wrap all of this into an options dictionary for ease of handling.
     it_opts = {
         'key'               : it_key,
         'type'              : it_dict['type'],
@@ -105,7 +106,7 @@ def process_test(item: list, cfg: list) -> str:
         'modulename'        : None,
         'gold'              : it_dict.get('gold', None),
         'diff'              : None,
-        'kafka'             : #Start kafka broker here?
+        'kafka'             : None
         #'vvp_args'          : it_dict.get('vvp-args', [ ]),
         #'vvp_args_extended' : it_dict.get('vvp-args-extended', [ ])
     }
@@ -115,7 +116,7 @@ def process_test(item: list, cfg: list) -> str:
         it_opts['vvp_args_extended'].append("-compatible")
         process_overrides('strict', it_dict, it_opts)
     else:
-        it_opts['iverilog_args'].append('-D__ICARUS_UNSIZED__')
+        it_opts['iverilog_args'].append('-d__icarus_unsized__')
 
     if cfg['force-sv']:
         force_gen(it_opts)
@@ -124,42 +125,42 @@ def process_test(item: list, cfg: list) -> str:
     if cfg['vlog95']:
         process_overrides('vlog95', it_dict, it_opts)
 
-    # Get the overridden test type.
+    # get the overridden test type.
     it_type = it_opts['type']
 
-    if it_type == "NI":
-        res = [0, "Not Implemented."]
+    if it_type == "ni":
+        res = [0, "not implemented."]
 
     elif it_type == "normal":
         res = run_ivl.run_normal(it_opts, cfg)
 
-    elif it_type == "CE":
-        res = run_ivl.run_CE(it_opts, cfg)
+    elif it_type == "ce":
+        res = run_ivl.run_ce(it_opts, cfg)
 
-    elif it_type == "EF":
-        res = run_ivl.run_EF(it_opts, cfg)
+    elif it_type == "ef":
+        res = run_ivl.run_ef(it_opts, cfg)
 
-    elif it_type == "TE":
-        res = run_ivl.run_TE(it_opts, cfg)
+    elif it_type == "te":
+        res = run_ivl.run_te(it_opts, cfg)
 
-    elif it_type == "KAFKA":
-        res = #Open a kafka broker?
+    elif it_type == "kafka":
+        res = run_ivl.run_kafka(it_opts, cfg) #TODO
 
     else:
-        raise InvalidTestType(it_key, it_type)
+        raise invalidtesttype(it_key, it_type)
 
     return res
 
 
 def print_header(cfg: dict, files: list):
-    '''Print all the header information. '''
-    # This returns 13 or similar
+    '''print all the header information. '''
+    # this returns 13 or similar
     ivl_version = run_ivl.get_ivl_version(cfg['suffix'])
 
-    print("Running ", end='')
+    print("running ", end='')
     if cfg['vlog95']:
         print("vlog95 ", end='')
-    print("compiler/VVP tests for Icarus Verilog ", end='')
+    print("compiler/kafka tests for icarus verilog ", end='')
     # pylint: disable-next=consider-using-f-string
     print("version: {ver}".format(ver=ivl_version), end='')
     if cfg['suffix']:
@@ -167,33 +168,33 @@ def print_header(cfg: dict, files: list):
         print(", suffix: {suffix}".format(suffix=cfg['suffix']), end='')
     if cfg['strict']:
         if cfg['force-sv']:
-            print(" (strict, force SV)", end='')
+            print(" (strict, force sv)", end='')
         else:
             print(" (strict)", end='')
     elif cfg['force-sv']:
-        print(" (force SV)", end='')
+        print(" (force sv)", end='')
     if cfg['with-valgrind']:
         print(" (valgrind)", end='')
     print("")
     # pylint: disable-next=consider-using-f-string
-    print("Using list(s): {files}".format(files=', '.join(files)))
+    print("using list(s): {files}".format(files=', '.join(files)))
     print("-" * 76)
 
 
 if __name__ == "__main__":
-    argp = argparse.ArgumentParser(description='')
+    argp = argparse.argumentparser(description='')
     argp.add_argument('--suffix', type=str, default='',
-                      help='The Icarus executable suffix, default "%(default)s".')
+                      help='the icarus executable suffix, default "%(default)s".')
     argp.add_argument('--strict', action='store_true',
-                      help='Force strict standard compliance, default "%(default)s".')
+                      help='force strict standard compliance, default "%(default)s".')
     argp.add_argument('--with-valgrind', action='store_true',
-                      help='Run the test suite with valgrind, default "%(default)s".')
+                      help='run the test suite with valgrind, default "%(default)s".')
     argp.add_argument('--force-sv', action='store_true',
-                      help='Force tests to be run as SystemVerilog, default "%(default)s".')
+                      help='force tests to be run as systemverilog, default "%(default)s".')
     argp.add_argument('--vlog95', action='store_true',
-                      help='Convert tests to Verilog 95 and then run, default "%(default)s".')
-    argp.add_argument('files', nargs='*', type=str, default=['regress-vvp.list'],
-                      help='File(s) containing a list of the tests to run, default "%(default)s".')
+                      help='convert tests to verilog 95 and then run, default "%(default)s".')
+    argp.add_argument('files', nargs='*', type=str, default=['regress-kafka.list'],
+                      help='file(s) containing a list of the tests to run, default "%(default)s".')
     args = argp.parse_args()
 
     ivl_cfg = {
@@ -206,10 +207,10 @@ if __name__ == "__main__":
 
     print_header(ivl_cfg, args.files)
 
-    # Read the list files, to get the tests.
+    # read the list files, to get the tests.
     tests_list = test_lists.read_lists(args.files)
 
-    # We need the width of the widest key so that we can figure out
+    # we need the width of the widest key so that we can figure out
     # how to align the key:result columns.
     # pylint: disable-next=invalid-name
     width = max(len(item[0]) for item in tests_list)
@@ -224,6 +225,6 @@ if __name__ == "__main__":
 
     print("=" * 76)
     # pylint: disable-next=consider-using-f-string
-    print("Test results: Ran {ran}, Failed {failed}.".format(ran=len(tests_list), \
+    print("test results: ran {ran}, failed {failed}.".format(ran=len(tests_list), \
                                                              failed=error_count))
     sys.exit(error_count)
