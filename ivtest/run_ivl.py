@@ -7,6 +7,7 @@ import difflib
 import os
 import sys
 import re
+import confluent_kafka
 
 def assemble_iverilog_cmd(options: dict, cfg: dict, outfile: str) -> list:
     '''Build the iverilog command line'''
@@ -340,10 +341,43 @@ def run_TE(options: dict, cfg: dict) -> list:
     '''Run a translation fail test'''
     return do_run_normal(options, cfg, False, True)
 
+
 def run_kafka(options: dict, cfg: dict) -> list:
     it_key = options['key']
     build_runtime(it_key)
 
+    # Configuration for the consumer
+    consumer_conf = {
+    'bootstrap.servers': 'localhost:9092',
+    'group.id': 'test-group',
+    'auto.offset.reset': 'earliest'
+    }    
+    topic = 'vcd-topic'
+    #Create consumer instance
+    consumer = Consumer(consumer_conf)
+    consumer.subscribe([topic])
+
+    # Run the iverilog command
+    ivl_cmd = assemble_iverilog_cmd(options, cfg, 'a.out')
+    ivl_res = run_cmd(ivl_cmd)
+
+
+    # run the vvp command
+    vvp_cmd = assemble_vvp_cmd(options, cfg)
+    vvp_res = run_cmd(vvp_cmd)
+
+    kafka_message_stream = []
+
+    while True:
+        poll_result = consumer.poll(5.0)
+        if poll_result is None:
+            break
+        else:
+            poll_result.error()
+        else:
+            kafka_message_stream.extend(message.value().decode('utf-8').split('\n'))
+
+    return check_run_outputs(options, vvp_res.stdout.decode('ascii'), log_list, expected_fail)
 
 
     # 1. Check Kafka is reachable

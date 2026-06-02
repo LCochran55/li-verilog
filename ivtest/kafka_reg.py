@@ -106,9 +106,8 @@ def process_test(item: list, cfg: list) -> str:
         'modulename'        : None,
         'gold'              : it_dict.get('gold', None),
         'diff'              : None,
-        'kafka'             : None
-        #'vvp_args'          : it_dict.get('vvp-args', [ ]),
-        #'vvp_args_extended' : it_dict.get('vvp-args-extended', [ ])
+        'vvp_args'          : [ ],
+        'vvp_args_extended' : [ ]
     }
 
     if cfg['strict']:
