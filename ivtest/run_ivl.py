@@ -144,7 +144,7 @@ def run_CE(options: dict, cfg: dict) -> list:
     # Run as vlog95 if needed.
     if cfg['vlog95']:
         options['iverilog_args'].extend(["-tvlog95", "-pfileline=1", "-pspacing=4"])
-        ivl_cmd = assemble_iverilog_cmd(options, cfg, 'vlog95.v')
+        ivl_cmd = assemble_`iverilog_cmd(options, cfg, 'vlog95.v')
     else:
         ivl_cmd = assemble_iverilog_cmd(options, cfg, 'a.out')
 
@@ -365,6 +365,15 @@ def run_kafka(options: dict, cfg: dict) -> list:
     # run the vvp command
     vvp_cmd = assemble_vvp_cmd(options, cfg)
     vvp_res = run_cmd(vvp_cmd)
+    log_results(it_key, "vvp", vvp_res)
+
+    vvp_rtn = build_vvp_return(expected_fail, vvp_res)
+    if vvp_rtn:
+        return vvp_rtn
+
+    log_list = ["iverilog-stdout", "iverilog-stderr",
+                "vvp-stdout", "vvp-stderr"]
+
 
     kafka_message_stream = []
 
@@ -372,13 +381,12 @@ def run_kafka(options: dict, cfg: dict) -> list:
         poll_result = consumer.poll(5.0)
         if poll_result is None:
             break
-        else:
-            poll_result.error()
+        elif poll_result.error():
+            print("Kafka error: {error}".format(error=poll_result.error()))
         else:
             kafka_message_stream.extend(message.value().decode('utf-8').split('\n'))
 
     return check_run_outputs(options, vvp_res.stdout.decode('ascii'), log_list, expected_fail)
-
 
     # 1. Check Kafka is reachable
     # 2. Set up consumer and subscribe
