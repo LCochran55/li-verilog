@@ -144,7 +144,7 @@ def run_CE(options: dict, cfg: dict) -> list:
     # Run as vlog95 if needed.
     if cfg['vlog95']:
         options['iverilog_args'].extend(["-tvlog95", "-pfileline=1", "-pspacing=4"])
-        ivl_cmd = assemble_`iverilog_cmd(options, cfg, 'vlog95.v')
+        ivl_cmd = assemble_iverilog_cmd(options, cfg, 'vlog95.v')
     else:
         ivl_cmd = assemble_iverilog_cmd(options, cfg, 'a.out')
 
