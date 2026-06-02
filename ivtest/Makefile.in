@@ -32,6 +32,7 @@ check:
 
 check-installed:
 	@status=0; \
+	$(MAKE) check-installed-kafka || status=1; \
 	$(MAKE) check-installed-vvp || status=1; \
 	$(MAKE) check-installed-vvp-py || status=1; \
 	$(MAKE) check-installed-vpi || status=1; \
@@ -44,6 +45,10 @@ ifeq (@LIBVERIUSER@,yes)
 else
 	cd $(abs_srcdir); perl vpi_reg.pl $(opts)
 endif
+
+check-installed-kafka:
+	@echo "Running kafka_reg.py"
+	cd $(abs_srcdir); python3 kafka_reg.py $(opts)
 
 check-installed-vvp:
 	@echo "Running vvp_reg.pl"

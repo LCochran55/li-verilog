@@ -17,8 +17,6 @@ import json
 import argparse
 import test_lists
 import run_ivl
-import run_kafka
-
 
 import confluent_kafka
 
@@ -94,7 +92,7 @@ def process_test(item: list, cfg: list) -> str:
     with open(test_path, 'rt', encoding='ascii') as fd:
         try:
             it_dict = json.load(fd)
-        except json.decoder.jsondecodeerror as Exception:
+        except json.decoder.JSONDecodeError as Exception:
             raise invalidjson(it_key, test_path, Exception) from Exception
 
     # wrap all of this into an options dictionary for ease of handling.
@@ -115,7 +113,7 @@ def process_test(item: list, cfg: list) -> str:
         it_opts['vvp_args_extended'].append("-compatible")
         process_overrides('strict', it_dict, it_opts)
     else:
-        it_opts['iverilog_args'].append('-d__icarus_unsized__')
+        it_opts['iverilog_args'].append('-D__ICARUS_UNSIZED__')
 
     if cfg['force-sv']:
         force_gen(it_opts)
@@ -127,23 +125,23 @@ def process_test(item: list, cfg: list) -> str:
     # get the overridden test type.
     it_type = it_opts['type']
 
-    if it_type == "ni":
+    if it_type == "NI":
         res = [0, "not implemented."]
 
     elif it_type == "normal":
         res = run_ivl.run_normal(it_opts, cfg)
 
-    elif it_type == "ce":
+    elif it_type == "CE":
         res = run_ivl.run_ce(it_opts, cfg)
 
-    elif it_type == "ef":
+    elif it_type == "EF":
         res = run_ivl.run_ef(it_opts, cfg)
 
-    elif it_type == "te":
+    elif it_type == "TE":
         res = run_ivl.run_te(it_opts, cfg)
 
-    elif it_type == "kafka":
-        res = run_ivl.run_kafka(it_opts, cfg) #TODO
+    elif it_type == "Kafka":
+        res = run_ivl.run_kafka(it_opts, cfg)
 
     else:
         raise invalidtesttype(it_key, it_type)
@@ -181,7 +179,7 @@ def print_header(cfg: dict, files: list):
 
 
 if __name__ == "__main__":
-    argp = argparse.argumentparser(description='')
+    argp = argparse.ArgumentParser(description='')
     argp.add_argument('--suffix', type=str, default='',
                       help='the icarus executable suffix, default "%(default)s".')
     argp.add_argument('--strict', action='store_true',

@@ -7,7 +7,8 @@ import difflib
 import os
 import sys
 import re
-import confluent_kafka
+
+from confluent_kafka import Consumer, KafkaException, AdminClient
 
 def assemble_iverilog_cmd(options: dict, cfg: dict, outfile: str) -> list:
     '''Build the iverilog command line'''
@@ -342,24 +343,67 @@ def run_TE(options: dict, cfg: dict) -> list:
     return do_run_normal(options, cfg, False, True)
 
 
-def run_kafka(options: dict, cfg: dict) -> list:
+def run_kafka(options: dict, cfg: dict, expected_fail: bool,
+                  translation_fail: bool) -> list:
+    '''run the iverilog and vvp commands.
+
+    in this case, run the compiler to generate a vvp output file, and
+    run the vvp command to actually execute the simulation. collect
+    the results and look for a "passed" string.'''
+
+    kafka_broker = {'bootstrap.servers': 'localhost:9092'}
+    admin_client = AdminClient(kafka_broker)
+
+    try:
+        admin_client.list_topics().topics    
+    except KafkaException:
+        return [1, "Failed - Kafka broker unavailable."]
+
     it_key = options['key']
     build_runtime(it_key)
 
-    # Configuration for the consumer
+    # run the vlog95 translation if needed.
+    if cfg['vlog95']:
+        options['iverilog_args'].extend(["-tvlog95", "-pfileline=1", "-pspacing=4"])
+        ivl_tcmd = assemble_iverilog_cmd(options, cfg, 'vlog95.v')
+        ivl_tres = run_cmd(ivl_tcmd)
+
+        log_results(it_key, "iverilog", ivl_tres)
+        if ivl_tres.returncode != 0:
+            return [1, "failed - vlog95 translation failed."]
+
+        saved_options = options_to_pass(options)
+        if "-pallowsigned=1" in options['iverilog_args']:
+            options['iverilog_args'] = [ "-g2001-noconfig" ]
+        else:
+            options['iverilog_args'] = [ "-g1995" ]
+        options['iverilog_args'].extend(saved_options)
+        options['source'] = os.path.join("work", "vlog95.v")
+
+
+    # run the iverilog command
+    ivl_cmd = assemble_iverilog_cmd(options, cfg, 'a.out')
+    ivl_res = run_cmd(ivl_cmd)
+
+    if cfg['vlog95']:
+        log_results(it_key, "iverilog-vlog95", ivl_res)
+    else:
+        log_results(it_key, "iverilog", ivl_res)
+
+    ivl_rtn = build_ivl_return(translation_fail, ivl_res)
+    if ivl_rtn:
+        return ivl_rtn
+
+    # configuration for the consumer
     consumer_conf = {
     'bootstrap.servers': 'localhost:9092',
     'group.id': 'test-group',
     'auto.offset.reset': 'earliest'
     }    
     topic = 'vcd-topic'
-    #Create consumer instance
+    #create consumer instance
     consumer = Consumer(consumer_conf)
     consumer.subscribe([topic])
-
-    # Run the iverilog command
-    ivl_cmd = assemble_iverilog_cmd(options, cfg, 'a.out')
-    ivl_res = run_cmd(ivl_cmd)
 
 
     # run the vvp command
@@ -371,28 +415,68 @@ def run_kafka(options: dict, cfg: dict) -> list:
     if vvp_rtn:
         return vvp_rtn
 
-    log_list = ["iverilog-stdout", "iverilog-stderr",
-                "vvp-stdout", "vvp-stderr"]
-
-
     kafka_message_stream = []
+    date_passed = False
 
     while True:
-        poll_result = consumer.poll(5.0)
-        if poll_result is None:
+        message = consumer.poll(timeout=10.0)
+        if message is None:
             break
-        elif poll_result.error():
-            print("Kafka error: {error}".format(error=poll_result.error()))
-        else:
+        elif message.error():
+            print("kafka error: {error}".format(error=message.error()))
+            break
+        if b"$version" in message.value() and date_passed == False:
+            date_passed = True
+        if date_passed: 
+            #print(f"received message: {message.value} from topic: {message.topic}")
             kafka_message_stream.extend(message.value().decode('utf-8').split('\n'))
 
-    return check_run_outputs(options, vvp_res.stdout.decode('ascii'), log_list, expected_fail)
+    return check_kafka_outputs(options, vvp_res.stdout.decode('ascii'), kafka_message_stream, expected_fail)
 
-    # 1. Check Kafka is reachable
-    # 2. Set up consumer and subscribe
-    # 3. Compile with iverilog (reuse assemble_iverilog_cmd + run_cmd)
-    # 4. Run vvp (reuse assemble_vvp_cmd + run_cmd)
-    # 5. Poll and collect messages
-    # 6. Compare against gold
-    # 7. Return pass/fail
+
+def check_kafka_outputs(options: dict, it_stdout: str, message_stream: list,
+                      expected_fail: bool) -> list:
+    '''check the output kafka message stream, and return success or failed.
+
+    this function takes an options dictionary that describes the settings, and
+    the output from the final command. this also takes a kafka stream of messages and compares
+    them to a corresponding gold file'''
+
+    # check the results against the gold file if it exists.
+    if options['gold'] is not None:
+        return check_kafka_gold(options, message_stream)
+
+    # if there is a diff description, then compare named files instead of
+    # the log and a gold file.
+    it_diff = options['diff']
+    if it_diff is not None:
+        return check_diff(it_diff[0], it_diff[1], it_diff[2])
+
+    # otherwise, look for the passed output string in stdout.
+    for line in it_stdout.splitlines():
+        if line == "passed":
+            return [0, "passed."]
+
+    # if there is no passed output, and nothing else to check, then
+    # assume a failure unless a fail is expected.
+    if expected_fail:
+        return [0, "passed - ef."]
+    return [1, "failed - no passed output, and no gold file."]
+
+def check_kafka_gold(options: dict, message_stream: list) -> list:
+    '''check if the kafka message stream and gold file match'''
+    compared = True
+
+    gold_path = os.path.join("gold", "{gold}.gold".format(gold=options['gold']))
+
+    with open(gold_path) as gold:
+        gold_lines = [line.strip() for line in gold]
+
+    compared = compared and (gold_lines == message_stream)
+
+    if compared:
+        return [0, "passed."]
+    return [1, "failed - gold output doesn't match actual output."]
+
+
 
