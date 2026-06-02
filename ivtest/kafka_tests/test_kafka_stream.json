@@ -1,5 +1,5 @@
 {
-  "type"   : "normal",
+  "type"   : "KA",
   "source" : "test_kafka_stream.v",
   "gold"   : "test_kafka_stream"
 }

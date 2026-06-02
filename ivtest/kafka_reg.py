@@ -137,7 +137,7 @@ def process_test(item: list, cfg: list) -> str:
     elif it_type == "TE":
         res = run_ivl.run_te(it_opts, cfg)
 
-    elif it_type == "Kafka":
+    elif it_type == "KA":
         res = run_ivl.run_kafka(it_opts, cfg)
 
     else:

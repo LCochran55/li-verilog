@@ -466,9 +466,10 @@ def check_kafka_outputs(options: dict, it_stdout: str, message_stream: list,
 
 def check_kafka_gold(options: dict, message_stream: list) -> list:
     '''check if the kafka message stream and gold file match'''
+
     compared = True
 
-    gold_path = os.path.join("gold", "{gold}.gold".format(gold=options['gold']))
+    gold_path = os.path.join("kafka_gold", "{gold}.gold".format(gold=options['gold']))
 
     with open(gold_path) as gold:
         gold_lines = [line.strip() for line in gold]

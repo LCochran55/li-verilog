@@ -479,9 +479,9 @@ static void open_dumpfile(vpiHandle callh) {
 	    }
 
 		if (!dump_no_date) {
-			kprintf("$date\n");
-			kprintf("\t%s",asctime(localtime(&walltime)));
-			kprintf("$end\n");
+			fprintf(dumpfile,"$date\n");
+			fprintf(dumpfile, "\t%s",asctime(localtime(&walltime)));
+			fprintf(dumpfile, "$end\n");
 		}
 	    kprintf("$version\n");
 	    kprintf("\tIcarus Verilog\n");
