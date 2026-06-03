@@ -20,7 +20,7 @@
 # include "sys_priv.h"
 # include "vcd_priv.h"
 
-#include <stream.h>
+#include <stream_producer.h>
 
 
 /*
