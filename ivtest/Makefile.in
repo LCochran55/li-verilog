@@ -48,7 +48,7 @@ endif
 
 check-installed-kafka:
 	@echo "Running kafka_reg.py"
-	cd $(abs_srcdir); python3 pip -m install confluent-kafka; python3 kafka_reg.py $(opts)
+	cd $(abs_srcdir); python3 kafka_reg.py $(opts)
 
 check-installed-vvp:
 	@echo "Running vvp_reg.pl"

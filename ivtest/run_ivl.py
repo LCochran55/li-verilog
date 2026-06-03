@@ -399,13 +399,16 @@ def run_kafka(options: dict, cfg: dict, expected_fail: bool,
     # configuration for the consumer
     consumer_conf = {
     'bootstrap.servers': 'localhost:9092',
-    'group.id': 'test-group',
-    'auto.offset.reset': 'earliest'
+    'group.id': 'test-group-{it_key}-{uuid.uuid4()}',
+    'auto.offset.reset': 'latest'
     }    
     topic = 'vcd-topic'
     #create consumer instance
     consumer = Consumer(consumer_conf)
     consumer.subscribe([topic])
+
+    while not consumer.assignment():
+        consumer.poll(timeout=1.0)
 
 
     # run the vvp command
@@ -430,9 +433,7 @@ def run_kafka(options: dict, cfg: dict, expected_fail: bool,
         if b"$version" in message.value() and date_passed == False:
             date_passed = True
         if date_passed: 
-            #print(f"received message: {message.value} from topic: {message.topic}")
-            if message.value() != "\n":
-                kafka_message_stream.extend(message.value().decode('utf-8').splitlines())                
+            kafka_message_stream.extend(message.value().decode('utf-8').splitlines())
 
     return check_kafka_outputs(options, vvp_res.stdout.decode('ascii'), kafka_message_stream, expected_fail)
 
@@ -474,9 +475,12 @@ def check_kafka_gold(options: dict, message_stream: list) -> list:
     gold_path = os.path.join("kafka_gold", "{gold}.gold".format(gold=options['gold']))
 
     with open(gold_path) as gold:
-        gold_lines = [line.strip() for line in gold]
+        gold_lines = [line.rstrip("\n") for line in gold]
 
-    compared = compared and (gold_lines == message_stream)
+    print(gold_lines)
+    print(message_stream)
+
+    compared = (gold_lines == message_stream)
 
     if compared:
         return [0, "passed."]
