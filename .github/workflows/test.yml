@@ -88,6 +88,7 @@ jobs:
         python3 -m venv .venv
         . .venv/bin/activate
         pip install --upgrade pip
+        pip install --upgrade confluent-kafka
         pip install -r Documentation/requirements.txt
 
     - name: Build Java 21 
