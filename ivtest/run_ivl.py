@@ -350,7 +350,7 @@ def run_kafka(options: dict, cfg: dict, expected_fail: bool,
     run the vvp command to actually execute the simulation. collect
     the results and look for a "passed" string.'''
 
-    from confluent_kafka import Consumer, KafkaException, AdminClient
+    #from confluent_kafka import Consumer, KafkaException, AdminClient
 
     kafka_broker = {'bootstrap.servers': 'localhost:9092'}
     admin_client = AdminClient(kafka_broker)
