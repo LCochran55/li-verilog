@@ -18,6 +18,8 @@ import argparse
 import test_lists
 import run_ivl
 
+from confluent_kafka import Consumer, KafkaException, AdminClient
+
 class invalidtesttype(Exception):
     '''Exception to raise when the test type is not supported.'''
     def __init__(self, test, ttype, msg='invalid test type!'):
