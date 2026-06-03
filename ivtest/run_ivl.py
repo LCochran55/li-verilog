@@ -431,7 +431,7 @@ def run_kafka(options: dict, cfg: dict, expected_fail: bool,
             date_passed = True
         if date_passed: 
             #print(f"received message: {message.value} from topic: {message.topic}")
-            kafka_message_stream.extend(message.value().decode('utf-8').split('\n'))
+            kafka_message_stream.extend(message.value().decode('utf-8').splitlines())
 
     return check_kafka_outputs(options, vvp_res.stdout.decode('ascii'), kafka_message_stream, expected_fail)
 
