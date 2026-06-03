@@ -125,7 +125,7 @@ jobs:
         sudo make install
 
     - name: Test
-      run:
+      run: |
         . .venv/bin/activate
         make check-installed
       env:
