@@ -477,9 +477,6 @@ def check_kafka_gold(options: dict, message_stream: list) -> list:
     with open(gold_path) as gold:
         gold_lines = [line.rstrip("\n") for line in gold]
 
-    print(gold_lines)
-    print(message_stream)
-
     compared = (gold_lines == message_stream)
 
     if compared:
